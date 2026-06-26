@@ -1,0 +1,38 @@
+#!/bin/bash
+
+VIDEO="$1"
+
+if [ -z "$VIDEO" ] || [ ! -f "$VIDEO" ]; then
+    echo "Помилка: вкажи шлях до відеофайлу."
+    exit 1
+fi
+
+# 1. Гасимо старі шпалери
+killall swaybg mpvpaper 2>/dev/null
+
+# 2. Витягуємо перший кадр
+FRAME="$HOME/.cache/vid_frame.jpg"
+ffmpeg -y -i "$VIDEO" -vframes 1 -q:v 2 "$FRAME" >/dev/null 2>&1
+
+# 3. Генеруємо кольори Pywal
+wal -i "$FRAME" -n
+
+# 4. Копіюємо конфіги (як у ran.sh)
+mkdir -p ~/.config/wofi
+cp -f ~/.cache/wal/wofi.css ~/.config/wofi/style.css
+mkdir -p ~/.config/mako
+cp -f ~/.cache/wal/mako ~/.config/mako/config
+
+# 5. Зберігаємо шлях 
+echo "$VIDEO" > ~/.config/current_video_wallpaper.txt
+
+# 6. Запускаємо для кожного монітора
+mpvpaper -o "loop=inf no-audio" 'DP-1' "$VIDEO" &
+mpvpaper -o "loop=inf no-audio panscan=1" 'HDMI-A-1' "$VIDEO" &
+
+# 7. Релоади
+pkill waybar && waybar &
+makoctl reload
+hyprctl reload
+
+notify-send "Відеошпалери" "Тему та відео успішно оновлено!"

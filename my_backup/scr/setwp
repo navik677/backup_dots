@@ -1,0 +1,73 @@
+#!/bin/bash
+if [ -z "$1" ]; then
+    echo "Юзай: setwp /шлях/до/картинки"
+    exit 1
+fi
+
+WP_PATH=$(realpath "$1")
+
+if pgrep -f zen-browser > /dev/null || pgrep -f zen-bin > /dev/null; then
+    WAS_OPEN=true
+else
+    WAS_OPEN=false
+fi
+
+if [ "$WAS_OPEN" = true ]; then
+    pkill -f zen-browser
+    pkill -f zen-bin
+    sleep 0.2
+    rm -f ~/.zen/*/.parentlock ~/.zen/*/*lock
+    find ~/.zen/ -type d -name "startupCache" -exec rm -rf {} +
+fi
+
+wal -i "$WP_PATH"
+
+mkdir -p ~/.config/wofi
+cp -f ~/.cache/wal/wofi.css ~/.config/wofi/style.css
+
+mkdir -p ~/.config/mako
+cp -f ~/.cache/wal/mako ~/.config/mako/config
+
+# Копіюємо тему ТА примусово вмикаємо легасі-стилі в user.js
+for prof in ~/.zen/*/ ; do
+    if [ -f "${prof}prefs.js" ]; then
+        mkdir -p "${prof}chrome"
+        cp -f ~/.cache/wal/zen.css "${prof}chrome/userChrome.css"
+        echo 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' >> "${prof}user.js"
+    fi
+done
+
+cp -f ~/.cache/wal/kdeglobals ~/.config/kdeglobals
+magick "$WP_PATH" ~/.config/current_wallpaper.png
+pkill swaybg
+swaybg -m fill -i ~/.config/current_wallpaper.png &
+
+pkill waybar && waybar &
+makoctl reload
+hyprctl reload
+
+if [ "$WAS_OPEN" = true ]; then
+    sleep 0.2
+    zen-browser --purgecaches > /dev/null 2>&1 &
+fi
+# Тюнінг Wofi
+C_BG=$(sed -n '1p' ~/.cache/wal/colors)
+C_FG=$(sed -n '16p' ~/.cache/wal/colors)
+C_C3=$(sed -n '4p' ~/.cache/wal/colors)
+C_C8=$(sed -n '9p' ~/.cache/wal/colors)
+
+cat << C_EOF > ~/.config/wofi/style.css
+window {
+    margin: 0px; border: 2px solid $C_C3; border-radius: 0px;
+    background-color: rgba(0, 0, 0, 0.85);
+    font-family: "JetBrainsMono NF", "monospace"; font-size: 14px;
+}
+#input {
+    margin: 10px; border: 1px solid $C_C8; border-radius: 0px; padding: 8px;
+    background-color: rgba(0, 0, 0, 0.4); color: $C_FG;
+}
+#input:focus { border: 1px solid $C_C3; }
+#entry { padding: 8px; color: $C_FG; }
+#entry:selected { background-color: $C_C3; color: #000000; font-weight: bold; }
+C_EOF
+notify-send 'SetWP' 'Система успішно оновлена!'

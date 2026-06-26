@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Шлях до файлу стану
+STATE_FILE="$HOME/.config/current_video_wallpaper.txt"
+
+if pgrep -x "mpvpaper" > /dev/null; then
+    # 1. Вимикаємо відео
+    killall mpvpaper
+    
+    # 2. Вмикаємо статику через swaybg
+    swaybg -m fill -i ~/.config/current_wallpaper.png &
+    
+    # 3. Примусово оновлюємо Pywal для поточної статичної шпалери
+    # (це підтягне кольори для Wofi/Waybar/Mako)
+    wal -i ~/.config/current_wallpaper.png -n
+    
+    # 4. Релоади інтерфейсу
+    pkill waybar && waybar &
+    makoctl reload
+    hyprctl reload
+    
+    notify-send "Режим" "Відеошпалери вимкнено (економія RAM)"
+else
+    # Вмикаємо відео, якщо шлях існує
+    if [ -f "$STATE_FILE" ]; then
+        ~/.local/bin/vidwp "$(cat "$STATE_FILE")"
+        notify-send "Режим" "Відеошпалери увімкнено"
+    else
+        notify-send "Помилка" "Файл конфігурації відео не знайдено"
+    fi
+fi

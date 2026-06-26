@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+WALLPAPER_DIR="$HOME/Wallpapers"
+NEW_WP=$(find "$WALLPAPER_DIR" -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \) | shuf -n 1)
+cp "$NEW_WP" "$HOME/.config/current_wallpaper.png"
+
+# Генеруємо насичену палітру
+wal -i "$NEW_WP" --backend vibrant
+
+C_BG=$(sed -n '1p' ~/.cache/wal/colors)
+C_FG=$(sed -n '16p' ~/.cache/wal/colors)
+C_C3=$(sed -n '4p' ~/.cache/wal/colors)
+C_C8=$(sed -n '9p' ~/.cache/wal/colors)
+
+# Оновлений стиль: ще темніший фон, насичений акцент
+cat << C_EOF > ~/.config/wofi/style.css
+window {
+    margin: 0px;
+    border: 2px solid $C_C3;
+    border-radius: 0px;
+    background-color: rgba(0, 0, 0, 0.85); /* Більш "густий" і темний фон */
+    font-family: "JetBrainsMono NF", "monospace";
+    font-size: 14px;
+}
+#outer-box { margin: 10px; border: none; background-color: transparent; }
+#input {
+    margin-bottom: 10px;
+    border: 1px solid $C_C8;
+    border-radius: 0px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.4); /* Чорне поле для контрасту */
+    color: $C_FG;
+}
+#input:focus { border: 1px solid $C_C3; }
+#scroll { border: none; background-color: transparent; }
+#entry { padding: 8px; border-radius: 0px; background-color: transparent; color: $C_FG; }
+#entry:selected { background-color: $C_C3; color: #000000; font-weight: bold; } /* Жирний, контрастний текст */
+#text { margin-left: 10px; }
+C_EOF
+
+pkill wofi; pkill waybar; waybar &; hyprctl reload; pkill mako; mako &; sleep 0.1
+pkill swaybg; swaybg -m fill -i "$HOME/.config/current_wallpaper.png" &
+notify-send "RandWP" "Тема оновлена: насичена і соковита!"

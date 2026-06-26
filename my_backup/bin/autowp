@@ -1,0 +1,12 @@
+#!/bin/bash
+wal -R
+
+# Якщо є файл з відеошпалерою — запускаємо mpvpaper
+if [ -f ~/.config/current_video_wallpaper.txt ]; then
+    VIDEO=$(cat ~/.config/current_video_wallpaper.txt)
+    mpvpaper -o "loop=inf no-audio" 'DP-1' "$VIDEO" &
+    mpvpaper -o "loop=inf no-audio panscan=1" 'HDMI-A-1' "$VIDEO" &
+else
+    # Інакше вантажимо звичайну картинку
+    swaybg -m fill -i ~/.config/current_wallpaper.png &
+fi
